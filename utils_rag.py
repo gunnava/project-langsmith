@@ -30,7 +30,11 @@ def get_vector_db_retriever():
             serializer="parquet",
         )
         print(f"[Docs] Loaded vectorstore from {_PERSIST_PATH.name}")
-        return vectorstore.as_retriever(search_kwargs={"k": 8})
+        # return vectorstore.as_retriever(search_kwargs={"k": 8})
+        return vectorstore.as_retriever(
+    search_type="similarity_score_threshold",
+    search_kwargs={"k": 6, "score_threshold": 0.5},   # tune this
+)
 
     print("[Docs] Building vectorstore (one-time, ~7 min)...")
 
@@ -66,7 +70,11 @@ def get_vector_db_retriever():
     )
     vectorstore.persist()
     print(f"[Docs] Saved to {_PERSIST_PATH.name}")
-    return vectorstore.as_retriever(search_kwargs={"k": 8})
+    # return vectorstore.as_retriever(search_kwargs={"k": 8})
+    return vectorstore.as_retriever(
+    search_type="similarity_score_threshold",
+    search_kwargs={"k": 6, "score_threshold": 0.5},   # tune this
+)
 
 
 retriever = get_vector_db_retriever()

@@ -62,3 +62,14 @@ class QualityResult(BaseModel):
     score: int = Field(description="Quality score 1–5 (5=excellent)")
     feedback: str = Field(description="Specific suggestion for improvement")
     passes: bool = Field(description="True if score >= 4")
+
+class DraftAnswer(BaseModel):
+    """Final answer plus whether it was actually grounded in the retrieved docs."""
+    answer: str = Field(description="The support answer to give the developer.")
+    grounded_in_docs: bool = Field(
+        description=(
+            "Set True ONLY if this answer is substantively based on the provided "
+            "LangSmith documentation search results. Set False if the search results "
+            "were irrelevant, empty, or unused and you answered from general knowledge."
+        )
+    )

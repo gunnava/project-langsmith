@@ -21,6 +21,7 @@ from schemas import (
     SupportState,
     QuestionClassification,
     QualityResult,
+    DraftAnswer,
     _PRIORITY_TO_SEVERITY,
 )
 from utils_rag import search_langsmith_docs
@@ -29,6 +30,7 @@ tools = [search_langsmith_docs]
 llm_with_tools = llm.bind_tools(tools)
 classify_llm = llm.with_structured_output(QuestionClassification)
 quality_llm  = llm.with_structured_output(QualityResult)
+answer_llm   = llm.with_structured_output(DraftAnswer)
 
 
 # ── Node 1: Classify (tickets only) ──────────────────────────────────────────
@@ -82,7 +84,6 @@ def draft_response_node(state: SupportState) -> dict:
     doc_results = ""
     # if the llm decided to call the tool:
     if response.tool_calls:
-        used_docs = True
         messages.append(response)
         for tc in response.tool_calls:
             result = search_langsmith_docs.invoke({
@@ -91,8 +92,10 @@ def draft_response_node(state: SupportState) -> dict:
             })
             doc_results = result
             messages.append(ToolMessage(content=result, tool_call_id=tc["id"]))
-        final = llm.invoke(messages) # second LLM call with doc 
-        draft = final.content
+        # Second call returns the answer AND whether it actually relied on the docs.
+        final = answer_llm.invoke(messages)      # structured: {answer, grounded_in_docs}
+        draft = final.answer
+        used_docs= final.grounded_in_docs
     else:
         draft = response.content
 
@@ -132,7 +135,6 @@ def chat_response_node(state: SupportState) -> dict:
     doc_results = ""
 
     if response.tool_calls:
-        used_docs = True
         messages.append(response)
         for tc in response.tool_calls:
             result = search_langsmith_docs.invoke({
@@ -141,8 +143,10 @@ def chat_response_node(state: SupportState) -> dict:
             })
             doc_results = result
             messages.append(ToolMessage(content=result, tool_call_id=tc["id"]))
-        final = llm.invoke(messages)
-        draft = final.content
+        # Second call returns the answer AND whether it actually relied on the docs.
+        final = answer_llm.invoke(messages)      # structured: {answer, grounded_in_docs}
+        draft = final.answer
+        used_docs = final.grounded_in_docs       # True ONLY if the answer is doc-based
     else:
         draft = response.content
 
