@@ -44,6 +44,7 @@ def main() -> None:
     print("Type your question, 'ticket' for structured input, or 'quit' to exit.\n")
 
     question_count = 0
+    current_thread_id = None 
 
     while True:
         raw = input("You: ").strip()
@@ -58,12 +59,19 @@ def main() -> None:
         if raw.lower() == "ticket":
             user_input = _collect_ticket()
             if not user_input:
+                question_count -= 1
                 continue
-            thread_id = f"ticket-{qid}-{uuid.uuid4().hex[:8]}"
+            current_thread_id = f"ticket-{qid}-{uuid.uuid4().hex[:8]}"
+        elif raw.lower() == "new":
+            current_thread_id = f"chat-{qid}-{uuid.uuid4().hex[:8]}"
+            print(f"  [new chat thread: {current_thread_id}]")
+            question_count -= 1
+            continue
         else:
             user_input = raw
-            thread_id = f"chat-{qid}-{uuid.uuid4().hex[:8]}"
+            if current_thread_id is None:
+                current_thread_id = f"chat-{qid}-{uuid.uuid4().hex[:8]}"
 
-        print(f"\n[{qid}] Running agent...")
-        result = run_input(user_input, question_id=qid, thread_id=thread_id)
+        print(f"\n[{qid}] Running agent...(thread: {current_thread_id})")
+        result = run_input(user_input, question_id=qid, thread_id=current_thread_id)
         _print_result(result)

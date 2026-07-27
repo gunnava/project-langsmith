@@ -228,15 +228,6 @@ def response_has_content(inputs, reference_outputs, outputs) -> dict:
     return {"key": "response_has_content", "score": int(len(outputs.get("draft_response", "")) > 50)}
 
 
-def cites_correct_api(inputs, reference_outputs, outputs) -> dict:
-    """Checks that the response mentions the expected API names / env vars."""
-    draft = outputs.get("draft_response", "").lower()
-    keywords = reference_outputs.get("expected_keywords", [])
-    if not keywords:
-        return {"key": "cites_correct_api", "score": 1.0}
-    matches = sum(1 for kw in keywords if kw.lower() in draft)
-    return {"key": "cites_correct_api", "score": matches / len(keywords)}
-
 
 # ── LLM-as-judge evaluators ───────────────────────────────────────────────────
 class AnswersQuestion(BaseModel):
@@ -353,6 +344,7 @@ if __name__ == "__main__":
     print("=== LangSmith Support Agent Evaluation ===\n")
 
     # Step 1: Create golden dataset
+    print("\n[Step 1] Creating Dataset if it doesn't exist...")
     create_dataset()
 
     # Step 2: Experiment A — default prompt
@@ -365,7 +357,6 @@ if __name__ == "__main__":
             severity_accurate,
             used_docs,
             response_has_content,
-            cites_correct_api,
             answers_question,
             tone_appropriate,
         ],
@@ -392,7 +383,6 @@ if __name__ == "__main__":
             severity_accurate,
             used_docs,
             response_has_content,
-            cites_correct_api,
         ],
         experiment_prefix=f"{PROJECT_NAME}-concise",
         metadata={"model": MODEL_NAME, "prompt_variant": "concise"},
@@ -409,26 +399,3 @@ if __name__ == "__main__":
     )
     print("[Pairwise] Done — check LangSmith UI for head-to-head results")
 
-    # Step 5: Module 5 — list_runs() to find low-quality or miscategorised runs
-    print("\n[Step 5] Querying experiment A for low-quality responses...")
-    runs = list(client.list_runs(project_name=exp_a, execution_order=1, limit=50))
-    low_quality = [r for r in runs if r.outputs and r.outputs.get("quality_score", 5) < 3]
-    print(f"Found {len(low_quality)} run(s) with quality_score < 3:")
-    for r in low_quality:
-        print(f"  run_id={r.id}  quality={r.outputs.get('quality_score')}  "
-              f"category={r.outputs.get('category')}  severity={r.outputs.get('severity')}")
-
-    # Step 6: Module 4 — create_feedback() to flag a run for human review
-    print("\n[Step 6] Submitting reviewer feedback on the first run...")
-    recent = list(client.list_runs(project_name=exp_a, execution_order=1, limit=1))
-    if recent:
-        run = recent[0]
-        client.create_feedback(
-            run_id=run.id,
-            key="reviewer_approval",
-            score=1.0,
-            comment="Category and API citations look correct.",
-        )
-        print(f"[Feedback] reviewer_approval=1.0 on run {run.id}")
-
-    print("\n=== Done! Open LangSmith to explore traces, experiments, and feedback. ===")
