@@ -1,6 +1,6 @@
 # LangSmith Support Agent
 
-A production-quality LangSmith support agent built as a demo for the LangChain Academy "Intro to LangSmith" course. Covers every major module: tracing, evaluation, Prompt Hub, human feedback, and monitoring.
+A production-grade AI support agent built to explore agentic workflows, RAG-based retrieval, and LLM observability using LangGraph, LangChain, and LangSmith. Covers every major module: tracing, evaluation, Prompt Hub, human feedback, and monitoring.
 
 ## What it does
 
